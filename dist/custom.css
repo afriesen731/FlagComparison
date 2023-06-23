@@ -1,0 +1,26 @@
+
+
+.flag-table {
+    height: 40vh;
+    border: rgba(0, 0, 0, 0.379) solid 1px; 
+    width: 50%; 
+    border-radius: 5px; 
+    -webkit-box-shadow: 5px 5px 15px -6px rgba(0,0,0,0.74); 
+    box-shadow: 5px 5px 15px -6px rgba(0,0,0,0.74);
+}
+
+.flag-table::-webkit-scrollbar {
+    width: 8px;
+    
+}
+
+.flag-table::-webkit-scrollbar-track {
+    background-color: rgb(0, 0, 0, 0); /* Set desired track color */
+  }
+
+
+.flag-table::-webkit-scrollbar-thumb {
+    background-color: #888; /* Set desired thumb color */
+    height: 30px;
+    border-radius: 5px;
+}
