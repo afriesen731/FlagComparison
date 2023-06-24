@@ -7,7 +7,7 @@ module.exports = {
     mode: 'development', // production or development (maybe other)
     
     plugins: [
-      new miniCssExtractPlugin(), 
+      new miniCssExtractPlugin({filename: 'css/[name].bundle.css'}), // css saved in css dir
       new webpack.ProvidePlugin({$: 'jquery', jQuery: 'jquery',})
     ],
 
@@ -19,7 +19,7 @@ module.exports = {
     },
     output: {
       filename: '[name].bundle.js',
-      path: path.resolve(__dirname, 'dist')
+      path: path.resolve(__dirname, 'js/dist')
     },
     
     watch: true, // checks index.js for changes

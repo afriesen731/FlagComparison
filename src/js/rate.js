@@ -20,7 +20,8 @@ import {
   updateDoc,
   limit,
   getCountFromServer,
-  startAfter, startAt, setDoc 
+  startAfter, startAt, setDoc,
+  CACHE_SIZE_UNLIMITED, getDocsFromCache, increment, memoryLocalCache, initializeFirestore, getDocFromCache  
 } from "firebase/firestore";
 import { getStorage, ref, getDownloadURL } from "firebase/storage"
 // TODO: Add SDKs for Firebase products that you want to use
@@ -39,9 +40,10 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig); 
+
 const analytics = getAnalytics(app);
-const db = getFirestore();
+const db = initializeFirestore(app, {localCache: memoryLocalCache()}); //adds reload storage
 const flagsRef = collection(db, 'flags')
 const storage = getStorage();
 const imgDirRef = ref(storage, "flags")
@@ -51,26 +53,33 @@ const imgDirRef = ref(storage, "flags")
 
 
 async function main(){
+
+
     const groupKey = "flags"
-    const lastFlagKey = "lastId"
+    const lastFlagKey = "last"
 
-    const flag1Key = "flag1";
-    const flag2Key = "flag2"
-    const flagKeyList = [flag1Key, flag2Key];
+    const flagOneKey = "flag1";
+    const flagTwoKey = "flag2";
+
+
+
+    const flagKeyList = [flagOneKey, flagTwoKey];
     
 
 
-    const flagOneParent = document.getElementById("flag-one-parent");
-    const flagTwoParent = document.getElementById("flag-two-parent")
+    const flagOneElement = document.getElementById("flag-one");
+    const flagTwoElement = document.getElementById("flag-two");
+
+    const optionOneElement = document.getElementById("option-one");
+    const optionTwoElement = document.getElementById("option-two")
 
 
+    let flagsSaved  = await cacheSavedCheck(groupKey, [flagOneKey, flagTwoKey, lastFlagKey])
     
-    let flagsSaved = !(sessionStorageIsEmpty(flag1Key) || sessionStorageIsEmpty(flag2Key));
-
-    let lastFlagSaved = !(sessionStorageIsEmpty(lastFlagKey));
+    // let flagsSaved = false;
 
     if (!flagsSaved) {
-
+        
         let flagsLen = await getQueryCount(flagsRef);
         let randStartFlag = await getRandDBFlag(flagsLen - 2); // offset to make sure there are enough flags to display
 
@@ -78,6 +87,9 @@ async function main(){
         // gets 10 flags from db and stores them
         let tempDocs = await getFlagGroupData(randStartFlag, 10)
         storeFlagsInBrowser(groupKey, tempDocs);
+
+        // store last flag
+        storeFlagsInBrowser(lastFlagKey, tempDocs.slice(-1)[0])
 
         
         
@@ -89,30 +101,144 @@ async function main(){
     }
 
 
-    if (!lastFlagSaved) {
-        saveLastFlag(lastFlagKey, groupKey);
+    setFlagSrc(flagOneKey, flagOneElement);
+    setFlagSrc(flagTwoKey, flagTwoElement);
+
+
+
+
+
+    optionOneElement.addEventListener("click", function() {flagVote(flagOneKey, flagTwoKey, flagOneElement, flagTwoElement, groupKey, lastFlagKey)});
+    optionTwoElement.addEventListener("click", function() {flagVote(flagTwoKey, flagOneKey, flagTwoElement, flagOneElement, groupKey, lastFlagKey)});
+
+}
+
+function setFlagSrc(flagKey, flagElement) {
+    let flagData = getSessionStorage(flagKey);
+    flagElement.setAttribute("src", flagData.flag);
+    
+}
+
+
+async function flagVote(winnerKey, loserKey, winnerElement, loserElement, groupKey, lastFlagKey) {
+
+    flagCompare(winnerKey, loserKey);
+
+    let flags = popAndStoreLocalFlags(groupKey, [winnerKey, loserKey]);
+
+
+    if (!flags) {
+        nextPage(groupKey, lastFlagKey, [winnerKey, loserKey]);
     }
 
 
-    let flagOneData = getSessionStorage(flag1Key);
-    let flagTwoData = getSessionStorage(flag2Key);
 
-
-    let flagOneElement = createFlagElement(flagOneData);
-    let flagTwoElement = createFlagElement(flagTwoData);
-
-    flagOneParent.appendChild(flagOneElement);
-    flagTwoParent.appendChild(flagTwoElement)
+    setFlagSrc(winnerKey, winnerElement);
+    setFlagSrc(loserKey, loserElement);
 
 
 
 
+}
+
+async function nextPage(groupKey, lastFlagKey, flagKeyList) {
+
+
+    let lastFlagData = getSessionStorage(lastFlagKey);
+
+    let lastFlagQuery = query(flagsRef, where("id", "==", lastFlagData.id));
+
+    let localLastDoc = await getDocsFromCache(lastFlagQuery);
+    localLastDoc = localLastDoc.docs[0];
+
+    let newFlags = await getFlagGroupData(localLastDoc, 10)
+    storeFlagsInBrowser(groupKey, newFlags);
+
+    
+    
+
+    // pop and store flag 1 and 2
+    popAndStoreLocalFlags(groupKey, flagKeyList);
+}
+
+async function flagCompare(winnerKey, loserKey) {
+    let winnerFlag = getSessionStorage(winnerKey);
+    let winnerDocRef = localDocFromData(winnerFlag);
+
+    let loserFlag = getSessionStorage(loserKey);
+    let loserDocRef = localDocFromData(loserFlag);
+    
 
 
 
+    let scoreIncrement = scoreChange(winnerFlag.score, loserFlag.score);
+
+    updateDoc(winnerDocRef, {score: increment(scoreIncrement)});
+    updateDoc(loserDocRef, {score: increment(scoreIncrement * -1)});
 
 
 
+}
+
+
+async function localDocFromData(data) {
+    // let localQuery = query(flagsRef, where("id", "==", data.id));
+    let docRef = doc(flagsRef, data.id);
+    let localSnapshot = await getDocFromCache(docRef);
+    let localDoc = localSnapshot.doc;
+    return localDoc;
+}
+
+async function cacheSavedCheck(groupKey, flagKeyList) {
+    let localCache;
+
+    if ( sessionStorageIsEmpty(groupKey) ) {
+        return false;
+        
+    }
+
+    else {
+        localCache = getSessionStorage(groupKey);
+    }
+    
+
+
+    
+    
+    for (let key of flagKeyList) {
+        
+
+        if (sessionStorageIsEmpty(key)) {
+            return false;
+        }
+
+        else {
+            let flagData = getSessionStorage(key);
+            localCache.push(flagData);
+        }
+
+
+    }
+
+    
+
+
+    for (let flagData of localCache) {
+        let localSnapshot = await localDocFromData(flagData)
+
+        if (localSnapshot.empty) {
+            return false;
+        }
+    }
+
+
+    return true;
+
+}
+
+function scoreChange(winner, loser) {
+    let unsignedchange = Math.round( (1 / ( 1 +  10 ** ( ( winner - loser ) / 400 ) )) - winner );
+    return unsignedchange;
 }
 
 function popAndStoreLocalFlags(groupKey, flagKeys) {
@@ -163,13 +289,17 @@ async function getFlagGroupData(startAfterFlag, len=10) {
     let flagDocs = await getDocs(q);
     flagDocs = flagDocs.docs;
 
-    let flagData = [];
+    let flagDataList = [];
 
 
     for (let doc of flagDocs) {
-        flagData.push(doc.data())
+        let flagData = doc.data();
+        flagData["id"] = doc.id;
+
+
+        flagDataList.push(flagData)
     }
-    return flagData;
+    return flagDataList;
 } 
 
 async function getRandDBFlag(flagsLen) {
@@ -181,20 +311,6 @@ async function getRandDBFlag(flagsLen) {
     let randFlag = await getDocs(randQuery);
     
     return randFlag.docs[0];
-}
-
-
-function createFlagElement(flagData){
-
-
-    const flagElement = document.createElement("img");
-
-
-    flagElement.setAttribute("src", flagData.flag);
-
-
-    return flagElement;
-
 }
 
 
@@ -255,12 +371,26 @@ function saveLastFlag(lastFlagKey, groupKey) {
     let groupData = getSessionStorage(groupKey);
 
     let lastFlag = groupData[-1];
-    let lastId = groupData.id;
 
 
-    storeFlagsInBrowser(lastFlagKey, lastId);
+    storeFlagsInBrowser(lastFlagKey, lastFlag);
 
 
 }
 
+
+
 main()
+
+// if the process fails it trys again after getting rid of saved storage
+// this prevents errors when the code for the page is updated and the storage format changes
+// only use in production
+
+// try {
+//     main()
+// }
+
+// catch(error) {
+//     sessionStorage.clear()
+//     main()
+// }
