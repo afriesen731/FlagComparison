@@ -54,6 +54,9 @@ const imgDirRef = ref(storage, "flags")
 
 async function main(){
 
+    await resetAllScores()
+
+    const k = 64;
 
     const groupKey = "flags"
     const lastFlagKey = "last"
@@ -89,7 +92,7 @@ async function main(){
         storeFlagsInBrowser(groupKey, tempDocs);
 
         // store last flag
-        storeFlagsInBrowser(lastFlagKey, tempDocs.slice(-1)[0])
+        storeFlagsInBrowser(lastFlagKey, tempDocs.slice(-1)[0]);
 
         
         
@@ -108,8 +111,8 @@ async function main(){
 
 
 
-    optionOneElement.addEventListener("click", function() {flagVote(flagOneKey, flagTwoKey, flagOneElement, flagTwoElement, groupKey, lastFlagKey)});
-    optionTwoElement.addEventListener("click", function() {flagVote(flagTwoKey, flagOneKey, flagTwoElement, flagOneElement, groupKey, lastFlagKey)});
+    optionOneElement.addEventListener("click", function() {flagVote(flagOneKey, flagTwoKey, flagOneElement, flagTwoElement, groupKey, lastFlagKey, k)});
+    optionTwoElement.addEventListener("click", function() {flagVote(flagTwoKey, flagOneKey, flagTwoElement, flagOneElement, groupKey, lastFlagKey, k)});
 
 }
 
@@ -120,9 +123,9 @@ function setFlagSrc(flagKey, flagElement) {
 }
 
 
-async function flagVote(winnerKey, loserKey, winnerElement, loserElement, groupKey, lastFlagKey) {
+async function flagVote(winnerKey, loserKey, winnerElement, loserElement, groupKey, lastFlagKey, k) {
 
-    flagCompare(winnerKey, loserKey);
+    flagCompare(winnerKey, loserKey, k);
 
     let flags = popAndStoreLocalFlags(groupKey, [winnerKey, loserKey]);
 
@@ -146,32 +149,29 @@ async function nextPage(groupKey, lastFlagKey, flagKeyList) {
 
     let lastFlagData = getSessionStorage(lastFlagKey);
 
-    let lastFlagQuery = query(flagsRef, where("id", "==", lastFlagData.id));
+    let lastFlagRef = doc(flagsRef, lastFlagData.id);
 
-    let localLastDoc = await getDocsFromCache(lastFlagQuery);
-    localLastDoc = localLastDoc.docs[0];
-
-    let newFlags = await getFlagGroupData(localLastDoc, 10)
+    let newFlags = await getFlagGroupData(lastFlagRef, 10)
     storeFlagsInBrowser(groupKey, newFlags);
 
-    
-    
+    // store last
+    storeFlagsInBrowser(lastFlagKey, newFlags.slice(-1)[0])
 
     // pop and store flag 1 and 2
     popAndStoreLocalFlags(groupKey, flagKeyList);
 }
 
-async function flagCompare(winnerKey, loserKey) {
+async function flagCompare(winnerKey, loserKey, k) {
     let winnerFlag = getSessionStorage(winnerKey);
-    let winnerDocRef = localDocFromData(winnerFlag);
+    let winnerDocRef = doc(flagsRef, winnerFlag.id);
 
     let loserFlag = getSessionStorage(loserKey);
-    let loserDocRef = localDocFromData(loserFlag);
+    let loserDocRef = doc(flagsRef, loserFlag.id);
     
 
 
 
-    let scoreIncrement = scoreChange(winnerFlag.score, loserFlag.score);
+    let scoreIncrement = scoreChange(winnerFlag.score, loserFlag.score, k);
 
     updateDoc(winnerDocRef, {score: increment(scoreIncrement)});
     updateDoc(loserDocRef, {score: increment(scoreIncrement * -1)});
@@ -180,14 +180,6 @@ async function flagCompare(winnerKey, loserKey) {
 
 }
 
-
-async function localDocFromData(data) {
-    // let localQuery = query(flagsRef, where("id", "==", data.id));
-    let docRef = doc(flagsRef, data.id);
-    let localSnapshot = await getDocFromCache(docRef);
-    let localDoc = localSnapshot.doc;
-    return localDoc;
-}
 
 async function cacheSavedCheck(groupKey, flagKeyList) {
     let localCache;
@@ -223,21 +215,22 @@ async function cacheSavedCheck(groupKey, flagKeyList) {
     
 
 
-    for (let flagData of localCache) {
-        let localSnapshot = await localDocFromData(flagData)
+    // for (let flagData of localCache) {
+    //     let localSnapshot = await localDocFromData(flagData)
 
-        if (localSnapshot.empty) {
-            return false;
-        }
-    }
+    //     if (localSnapshot.empty) {
+    //         return false;
+    //     }
+    // }
 
 
     return true;
 
 }
 
-function scoreChange(winner, loser) {
-    let unsignedchange = Math.round( (1 / ( 1 +  10 ** ( ( winner - loser ) / 400 ) )) - winner );
+function scoreChange(winner, loser, k=32) {
+    let chanceOfWinning =  (1 / ( 1 +  10 ** ( ( loser - winner ) / 400 ) ));
+    let unsignedchange = Math.round(k * (1 - chanceOfWinning))
     return unsignedchange;
 }
 
@@ -377,6 +370,16 @@ function saveLastFlag(lastFlagKey, groupKey) {
 
 
 }
+
+
+async function resetAllScores() {
+    let allDocs = await getDocs(flagsRef);
+    allDocs = allDocs.docs
+    for (let document of allDocs) {
+        await updateDoc(document.ref, {score: 1400});
+    }
+}
+
 
 
 
