@@ -18,8 +18,8 @@ module.exports = {
       header: './src/js/header.js'
     },
     output: {
-      filename: '[name].bundle.js',
-      path: path.resolve(__dirname, 'js/dist')
+      filename: 'js/[name].bundle.js',
+      path: path.resolve(__dirname, 'dist')
     },
     
     watch: true, // checks index.js for changes

@@ -54,7 +54,7 @@ const imgDirRef = ref(storage, "flags")
 
 async function main(){
 
-    await resetAllScores()
+    // await resetAllScores()
 
     const k = 64;
 
@@ -88,8 +88,10 @@ async function main(){
 
         
         // gets 10 flags from db and stores them
-        let tempDocs = await getFlagGroupData(randStartFlag, 10)
-        storeFlagsInBrowser(groupKey, tempDocs);
+        let tempDocs = await getFlagGroupData(randStartFlag, 11)
+
+        // stores all but last flag
+        storeFlagsInBrowser(groupKey, tempDocs.slice(0, -1));
 
         // store last flag
         storeFlagsInBrowser(lastFlagKey, tempDocs.slice(-1)[0]);
@@ -131,7 +133,8 @@ async function flagVote(winnerKey, loserKey, winnerElement, loserElement, groupK
 
 
     if (!flags) {
-        nextPage(groupKey, lastFlagKey, [winnerKey, loserKey]);
+        await nextPage(groupKey, lastFlagKey, [winnerKey, loserKey]);
+        flags = popAndStoreLocalFlags(groupKey, [winnerKey, loserKey]);
     }
 
 
@@ -151,8 +154,19 @@ async function nextPage(groupKey, lastFlagKey, flagKeyList) {
 
     let lastFlagRef = doc(flagsRef, lastFlagData.id);
 
-    let newFlags = await getFlagGroupData(lastFlagRef, 10)
-    storeFlagsInBrowser(groupKey, newFlags);
+    let downloadedFlags = await getFlagGroupData(lastFlagRef, 10);
+
+
+    // creates new list with last and downloaded flags
+    let newFlags = [lastFlagData].concat(downloadedFlags);
+
+    // adds all but last flag to flag group
+    storeFlagsInBrowser(groupKey, newFlags.slice(0, -1)); 
+    console.log("\nall flags: ")
+    console.log(newFlags)
+    let temp = newFlags.slice(-1)[0];
+    console.log("last flag: ")
+    console.log(temp.country)
 
     // store last
     storeFlagsInBrowser(lastFlagKey, newFlags.slice(-1)[0])
@@ -236,7 +250,7 @@ function scoreChange(winner, loser, k=32) {
 
 function popAndStoreLocalFlags(groupKey, flagKeys) {
 
-    let flagGroup = getSessionStorage(groupKey);
+    // let flagGroup = getSessionStorage(groupKey);
     let flags = [];
 
     for (let flagKey of flagKeys) {
@@ -255,7 +269,7 @@ function popAndStoreLocalFlags(groupKey, flagKeys) {
     return flags;
 }
 
-function storeFlagsInBrowser(key, flags) {
+function storeFlagsInBrowser(key, flags) {orderBy
     sessionStorage.setItem(key, JSON.stringify(flags));
 }
 
@@ -271,9 +285,11 @@ function sessionStorageIsEmpty(key) {
 
 
 async function getFlagGroupData(startAfterFlag, len=10) {
+
+    let docSnap = await getDoc(startAfterFlag)
     let q;
     if (startAfterFlag) {
-        q = query(flagsRef, orderBy("score", "desc"), startAfter(startAfterFlag), limit(len));
+        q = query(flagsRef, orderBy("score", "desc"), startAfter(docSnap), limit(len));
     }
     else {
         q = query(flagsRef, orderBy("score", "desc"), limit(len));
