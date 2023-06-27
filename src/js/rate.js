@@ -286,8 +286,10 @@ function sessionStorageIsEmpty(key) {
 
 async function getFlagGroupData(startAfterFlag, len=10) {
 
-    let docSnap = await getDoc(startAfterFlag)
+    let docSnap = await getDoc(startAfterFlag);
     let q;
+
+    
     if (startAfterFlag) {
         q = query(flagsRef, orderBy("score", "desc"), startAfter(docSnap), limit(len));
     }
@@ -295,8 +297,20 @@ async function getFlagGroupData(startAfterFlag, len=10) {
         q = query(flagsRef, orderBy("score", "desc"), limit(len));
     }
     
-    let flagDocs = await getDocs(q);
-    flagDocs = flagDocs.docs;
+    let flagSnapshots = await getDocs(q);
+
+
+
+    let flagDocs = flagSnapshots.docs;
+
+    // starts at beggining if at end
+    if (flagDocs.length < len) {
+        q = query(flagsRef, orderBy("score", "desc"), limit(len));
+        flagSnapshots = await getDocs(q);
+        flagDocs = flagDocs.concat(flagSnapshots.docs);
+
+    }
+    
 
     let flagDataList = [];
 
@@ -318,8 +332,10 @@ async function getRandDBFlag(flagsLen) {
 
     let randQuery = await query(flagsRef, where("randPosition", "==", randIndex), limit(1));
     let randFlag = await getDocs(randQuery);
+    randFlag = randFlag.docs[0];
+    randFlag = doc(flagsRef, randFlag.id);
     
-    return randFlag.docs[0];
+    return randFlag;
 }
 
 
