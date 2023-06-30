@@ -1,4 +1,4 @@
 # FlagComparison
-[FlagMash](https://flagcomparison.web.app){:target="_blank"}
+[FlagMash](https://flagcomparison.web.app)
 
 
