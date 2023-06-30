@@ -53,6 +53,7 @@ async function main(){
     // await resetAllScores()
 
     const k = 64;
+    const wait = 750;
 
     const groupKey = "flags"
     const lastFlagKey = "last"
@@ -68,6 +69,9 @@ async function main(){
 
     const flagOneElement = document.getElementById("flag-one");
     const flagTwoElement = document.getElementById("flag-two");
+
+    const nameOneElement = document.getElementById("name-one")
+    const nameTwoElement = document.getElementById("name-two")
 
     const optionOneElement = document.getElementById("option-one");
     const optionTwoElement = document.getElementById("option-two")
@@ -109,8 +113,35 @@ async function main(){
 
 
 
-    optionOneElement.addEventListener("click", function() {flagVote(flagOneKey, flagTwoKey, flagOneElement, flagTwoElement, groupKey, lastFlagKey, k)});
-    optionTwoElement.addEventListener("click", function() {flagVote(flagTwoKey, flagOneKey, flagTwoElement, flagOneElement, groupKey, lastFlagKey, k)});
+    optionOneElement.addEventListener("click", async function() {
+        optionOneElement.classList.add("active");
+        await displayNames([flagOneElement, flagTwoElement], [nameOneElement, nameTwoElement], flagKeyList, wait);
+        optionOneElement.classList.remove("active");
+        flagVote(flagOneKey, flagTwoKey, flagOneElement, flagTwoElement, groupKey, lastFlagKey, k);
+    });
+
+    optionTwoElement.addEventListener("click", async function() {
+        optionTwoElement.classList.add("active");
+        await displayNames([flagOneElement, flagTwoElement], [nameOneElement, nameTwoElement], flagKeyList, wait);
+        optionTwoElement.classList.remove("active");
+        flagVote(flagTwoKey, flagOneKey, flagTwoElement, flagOneElement, groupKey, lastFlagKey, k);
+    });
+
+}
+
+async function displayNames(flagElementList, flagNameElements, flagKeyList, wait) { // lists need to be in same order
+    for (let i = 0; i < flagElementList.length; i++) {
+        flagElementList[i].setAttribute("src", "");
+        let flagData = getSessionStorage(flagKeyList[i]);
+        flagNameElements[i].innerHTML = flagData.country;
+    }
+
+    await sleep(wait);
+
+    for (let i = 0; i < flagNameElements.length; i++) {
+
+        flagNameElements[i].innerHTML = "";
+    }
 
 }
 
@@ -132,8 +163,6 @@ async function flagVote(winnerKey, loserKey, winnerElement, loserElement, groupK
         await nextPage(groupKey, lastFlagKey, [winnerKey, loserKey]);
         flags = popAndStoreLocalFlags(groupKey, [winnerKey, loserKey]);
     }
-
-
 
     setFlagSrc(winnerKey, winnerElement);
     setFlagSrc(loserKey, loserElement);
@@ -408,6 +437,10 @@ async function resetAllScores() {
     }
 }
 
+
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
 
 

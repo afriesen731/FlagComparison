@@ -8,6 +8,8 @@
 }
 
 .flag-table {
+
+
     background: #2c3034;
     height: 75vh;
     border: rgba(0, 0, 0, 0.379) solid 1px; 
@@ -33,6 +35,10 @@
     background-color: #888; /* Set desired thumb color */
     height: 30px;
     border-radius: 5px;
+}
+
+.table {
+    font-size: 1.25rem;
 }
 
 #next-page-btn {
