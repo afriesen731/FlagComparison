@@ -8,7 +8,6 @@
 }
 
 .flag-table {
-    background: #2c3034;
     height: 75vh;
     border: rgba(0, 0, 0, 0.379) solid 1px; 
     width: 65%; 
@@ -16,8 +15,6 @@
     -webkit-box-shadow: 5px 5px 15px -6px rgba(255,255,255,0.74); 
     box-shadow: 5px 5px 15px -6px rgba(255,255,255,0.30);
 }
-
-
 
 .flag-table::-webkit-scrollbar {
     width: 8px;

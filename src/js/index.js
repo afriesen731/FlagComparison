@@ -34,6 +34,7 @@
 // maybe run "firebase init hosting" if not working
 
 // host with "firebase deploy --only hosting"
+// now use "npm run deploy" this way it uploads to public dir
 
 
 // Import our custom CSS
@@ -49,16 +50,12 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { 
   getFirestore, collection, getDocs,
-  addDoc, 
-  deleteDoc, doc,
-  onSnapshot, docRef,
-  query, where,
-  orderBy, serverTimestamp,
-  getDoc,
-  updateDoc,
-  limit
+
+  query,
+  orderBy,
+  limit, startAfter
 } from "firebase/firestore";
-import { getStorage, ref, getDownloadURL } from "firebase/storage"
+import { getStorage, ref } from "firebase/storage"
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -85,7 +82,10 @@ const imgDirRef = ref(storage, "flags")
 
 
 
+
+
 const rankTable = document.getElementById("flag-rankings");
+const nextPageBtn = document.getElementById("next-page-btn")
 
 
 async function addRankToTable(table, data, rank) {
@@ -103,7 +103,7 @@ async function addRankToTable(table, data, rank) {
   let flagData = document.createElement("td");
   let flagElement = document.createElement("img");
   flagElement.setAttribute("src", data.flag);
-  flagElement.setAttribute("height", "20");
+  flagElement.setAttribute("height", "30");
 
   flagData.appendChild(flagElement);
   newRow.appendChild(flagData);
@@ -139,50 +139,72 @@ async function addRankToTable(table, data, rank) {
 
 }
 
-async function getRankings(tableElement, readLimit=10, continentNum = 0) {
+async function getRankings(tableElement, startFlag=null, readLimit=10,) {
   let q;
   
-  if (continentNum == 0) {
 
+  if (startFlag) {
     q = query(flagsRef, 
-              orderBy("score", "desc"),
-              limit(readLimit)
+      orderBy("score", "desc"),
+      startAfter(startFlag),
+      limit(readLimit)
     );
-
   }
 
-  // get continent specific ranking
   else {
-
     q = query(flagsRef, 
-              orderBy("score", "desc"), 
-              where("continent", "==", continentNum), 
-              limit(readLimit)
+      orderBy("score", "desc"),
+      limit(readLimit)
     );
-    
   }
+
+
+
+
+
 
   const qSnapshot = await getDocs(q);
-  let rank = 1;
+  const qDocs = qSnapshot.docs;
+  let rank = tableElement.childElementCount + 1;
   // qSnapshot.forEach(async (doc) => {
   
-  for (let i = 0; i < qSnapshot.docs.length; i++) {
-    let doc = qSnapshot.docs[i]
-    await addRankToTable(rankTable, doc.data(), rank);
+  for (let i = 0; i < qDocs.length; i++) {
+    let document = qDocs[i]
+    await addRankToTable(rankTable, document.data(), rank);
     rank++
   }
+
+
+
+  let last = qDocs.slice(-1)[0]
+  
+  return last
   
 }
 
-getRankings(rankTable)
 
-// db.collection("flags").orderBy("score", "desc").then((snapshot) => {
-//   rank = 0;
-//   snapshot.docs.foreach( doc => {
-//     rank++;
-//     addRanking(doc, rank);
-//   })
-// })
+
+
+
+async function main() {
+  let last = await getRankings(rankTable);
+  let lastRank = 0
+  console.log(nextPageBtn);
+  nextPageBtn.addEventListener("click", async function() {
+    
+    if (last) { // dont run if at end of db
+      last = await getRankings(rankTable, last);
+    }
+  });
+
+}
+
+main()
+
+
+
+
+
 
 
 

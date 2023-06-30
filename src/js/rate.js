@@ -10,20 +10,16 @@ import 'bootstrap';
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { 
-  getFirestore, collection, getDocs,
-  addDoc, 
-  deleteDoc, doc,
-  onSnapshot, docRef,
-  query, where,
-  orderBy, serverTimestamp,
+collection, getDocs, doc,
+    query, where,
+  orderBy,
   getDoc,
   updateDoc,
   limit,
   getCountFromServer,
-  startAfter, startAt, setDoc,
-  CACHE_SIZE_UNLIMITED, getDocsFromCache, increment, memoryLocalCache, initializeFirestore, getDocFromCache  
+  startAfter, increment, memoryLocalCache, initializeFirestore
 } from "firebase/firestore";
-import { getStorage, ref, getDownloadURL } from "firebase/storage"
+import { getStorage, ref } from "firebase/storage"
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -291,10 +287,10 @@ async function getFlagGroupData(startAfterFlag, len=10) {
 
     
     if (startAfterFlag) {
-        q = query(flagsRef, orderBy("score", "desc"), startAfter(docSnap), limit(len));
+        q = query(flagsRef, orderBy("score"), startAfter(docSnap), limit(len));
     }
     else {
-        q = query(flagsRef, orderBy("score", "desc"), limit(len));
+        q = query(flagsRef, orderBy("score"), limit(len));
     }
     
     let flagSnapshots = await getDocs(q);
@@ -305,7 +301,7 @@ async function getFlagGroupData(startAfterFlag, len=10) {
 
     // starts at beggining if at end
     if (flagDocs.length < len) {
-        q = query(flagsRef, orderBy("score", "desc"), limit(len));
+        q = query(flagsRef, orderBy("score"), limit(len));
         flagSnapshots = await getDocs(q);
         flagDocs = flagDocs.concat(flagSnapshots.docs);
 
