@@ -1,3 +1,3 @@
 # FlagComparison
-<a href="https://flagcomparison.web.app">FlagMash</a>
+<a href="https://flagcomparison.web.app" target="_blank">FlagMash</a>
 
