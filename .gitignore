@@ -2,3 +2,4 @@ node_modules
 uploadFlags.js
 flags2.csv
 .extra
+.env

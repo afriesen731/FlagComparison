@@ -42,6 +42,7 @@ import '../scss/styles.scss'
 
 // Import all of Bootstrap's JS
 import 'bootstrap';
+import 'dotenv'
 
 
 
@@ -62,13 +63,13 @@ import { getStorage, ref } from "firebase/storage"
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyA3QJZPH9FbRNaXwrZ3WTINErxbKbyHROc",
-  authDomain: "flagcomparison.firebaseapp.com",
-  projectId: "flagcomparison",
-  storageBucket: "flagcomparison.appspot.com",
-  messagingSenderId: "382964268359",
-  appId: "1:382964268359:web:c7989ae0993023dd816062",
-  measurementId: "G-TRC982V88F"
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
@@ -87,7 +88,13 @@ const imgDirRef = ref(storage, "flags")
 const rankTable = document.getElementById("flag-rankings");
 const nextPageBtn = document.getElementById("next-page-btn")
 
-
+/**
+ * Adds a ranking row to the table displaying flag rankings.
+ * 
+ * @param {HTMLElement} table - The HTML table element to append the new row to.
+ * @param {Object} data - The data for the flag, including 'flag' (image URL), 'country' (country name), and 'score' (ranking score).
+ * @param {number} rank - The ranking position for the flag.
+ */
 async function addRankToTable(table, data, rank) {
   // new column
 
@@ -139,6 +146,14 @@ async function addRankToTable(table, data, rank) {
 
 }
 
+/**
+ * Retrieves flag rankings from the database and adds them to the ranking table.
+ * 
+ * @param {HTMLElement} tableElement - The table element where flag rankings will be displayed.
+ * @param {Object|null} startFlag - The document snapshot of the last flag from the previous page of results, used for pagination.
+ * @param {number} readLimit - The maximum number of flags to retrieve in one query (default is 10).
+ * @returns {Object} - The last flag document snapshot in the current set, used for pagination.
+ */
 async function getRankings(tableElement, startFlag=null, readLimit=10,) {
   let q;
   
@@ -185,7 +200,9 @@ async function getRankings(tableElement, startFlag=null, readLimit=10,) {
 
 
 
-
+/**
+ * Main function to initialize the rankings table and handle pagination with the "Next Page" button.
+ */
 async function main() {
   let last = await getRankings(rankTable);
   let lastRank = 0
