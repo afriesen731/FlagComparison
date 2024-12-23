@@ -37,48 +37,28 @@
 // now use "npm run deploy" this way it uploads to public dir
 
 
-// Import our custom CSS
 import '../scss/styles.scss'
 
-// Import all of Bootstrap's JS
 import 'bootstrap';
 import 'dotenv'
+import {Flag} from "../js/structures.js"
+
+import {
+  flagsRef,
+} from "../js/firebase.js"
 
 
-
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 import { 
-  getFirestore, collection, getDocs,
-
+  getDocs,
   query,
   orderBy,
-  limit, startAfter
+  limit, 
+  startAfter
 } from "firebase/firestore";
-import { getStorage, ref } from "firebase/storage"
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID,
-  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
-};
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const db = getFirestore();
-const flagsRef = collection(db, 'flags')
-const storage = getStorage();
-const imgDirRef = ref(storage, "flags")
+
+
 
 
 
@@ -92,12 +72,10 @@ const nextPageBtn = document.getElementById("next-page-btn")
  * Adds a ranking row to the table displaying flag rankings.
  * 
  * @param {HTMLElement} table - The HTML table element to append the new row to.
- * @param {Object} data - The data for the flag, including 'flag' (image URL), 'country' (country name), and 'score' (ranking score).
+ * @param {Flag} flag - The Flag instance representing the flag data.
  * @param {number} rank - The ranking position for the flag.
  */
 async function addRankToTable(table, data, rank) {
-  // new column
-
   const newRow = document.createElement("tr");
 
   // add rank
@@ -180,9 +158,7 @@ async function getRankings(tableElement, startFlag=null, readLimit=10,) {
 
   const qSnapshot = await getDocs(q);
   const qDocs = qSnapshot.docs;
-  let rank = tableElement.childElementCount + 1;
-  // qSnapshot.forEach(async (doc) => {
-  
+  let rank = tableElement.childElementCount + 1;  
   for (let i = 0; i < qDocs.length; i++) {
     let document = qDocs[i]
     await addRankToTable(rankTable, document.data(), rank);

@@ -1,58 +1,34 @@
-// Import our custom CSS
 import '../scss/styles.scss'
 
-// Import all of Bootstrap's JS
+
 import 'bootstrap';
-import 'dotenv'
+import 'dotenv';
 
-
-
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import {
+    Flag
+} from "../js/structures.js"
+import {
+    flagsRef,
+} from "../js/firebase.js"
 import { 
-collection, getDocs, doc,
-    query, where,
-  orderBy,
-  getDoc,
-  updateDoc,
-  limit,
-  getCountFromServer,
-  startAfter, increment, memoryLocalCache, initializeFirestore
+    getDocs, 
+    doc,
+    query, 
+    where,
+    orderBy,
+    getDoc,
+    updateDoc,
+    limit,
+    getCountFromServer,
+    startAfter, 
+    increment,
 } from "firebase/firestore";
-import { getStorage, ref } from "firebase/storage"
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY,
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.FIREBASE_APP_ID,
-    measurementId: process.env.FIREBASE_MEASUREMENT_ID,
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig); 
-
-const analytics = getAnalytics(app);
-const db = initializeFirestore(app, {localCache: memoryLocalCache()}); //adds reload storage
-const flagsRef = collection(db, 'flags')
-const storage = getStorage();
-const imgDirRef = ref(storage, "flags")
 
 
 
 
-/**
- * Main function that initializes the flag voting process.
- * Loads flags from the cache or database, sets flag elements, and 
- * handles vote events.
- */
+
+
 async function main(){
     // Uncomment this to reset all flag scores to the initial value (1400)
     // await resetAllScores()
@@ -109,7 +85,6 @@ async function main(){
         
         
 
-        // pop and store flag 1 and 2
         popAndStoreLocalFlags(groupKey, flagKeyList);
 
 
@@ -558,7 +533,6 @@ function saveLastFlag(lastFlagKey, groupKey) {
 /**
  * Resets the score of all flags in the database to the default value (1400).
  * 
- * @returns {Promise<void>} - A promise that resolves once all scores are reset.
  */
 async function resetAllScores() {
     let allDocs = await getDocs(flagsRef);
